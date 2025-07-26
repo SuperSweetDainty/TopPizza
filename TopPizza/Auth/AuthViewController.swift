@@ -27,8 +27,6 @@ class AuthViewController: UIViewController, UITextFieldDelegate {
         view.addGestureRecognizer(tapGesture)
 
         enterButton.alpha = 0.4
-
-        // Изначально скрываем кнопку
         passwordTextField.rightViewMode = .never
     }
 
@@ -60,8 +58,35 @@ class AuthViewController: UIViewController, UITextFieldDelegate {
     }
 
     @IBAction func EnterButtonTapped(_ sender: UIButton) {
-    }
+        dismissKeyboard()
 
+           let login = loginTextField.text ?? ""
+           let password = passwordTextField.text ?? ""
+
+           if login == "Qwerty123" && password == "Qwerty123" {
+               UserDefaults.standard.set(true, forKey: "shouldShowSuccessBanner")
+               navigateToMainScreen()
+
+           } else {
+               showBanner(
+                   message: "Неверный логин или пароль",
+                   textColor: UIColor(named: "BannerRed") ?? .systemRed,
+                   iconName: "CloseCircle"
+               )
+
+           }
+    }
+    
+    func navigateToMainScreen() {
+        let storyboard = UIStoryboard(name: "Main", bundle: nil)
+        guard let mainTabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController else {
+            print("Не удалось найти MainTabBarController")
+            return
+        }
+
+        mainTabBarVC.modalPresentationStyle = .fullScreen
+        present(mainTabBarVC, animated: true)
+    }
 
     func setupTextField(textField: UITextField, placeholder: String) {
         textField.layer.borderColor = (UIColor(named: "Grey") ?? .lightGray).cgColor
@@ -106,7 +131,6 @@ class AuthViewController: UIViewController, UITextFieldDelegate {
             }
         }
 
-        // Отображаем иконку, если что-то введено в поле пароля
         if textField == passwordTextField {
             passwordTextField.rightViewMode = string.isEmpty && range.location == 0 ? .never : .always
         }
@@ -124,8 +148,8 @@ class AuthViewController: UIViewController, UITextFieldDelegate {
         eyeButton.imageView?.contentMode = .scaleAspectFit
         eyeButton.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
 
-        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: 24, height: 18))
-        eyeButton.center = CGPoint(x: containerView.bounds.width - 15/2 - 9, y: containerView.bounds.midY)
+        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 15, height: 18))
+        eyeButton.center = CGPoint(x: containerView.bounds.width - 24, y: containerView.bounds.midY)
         containerView.addSubview(eyeButton)
 
         passwordTextField.rightView = containerView
