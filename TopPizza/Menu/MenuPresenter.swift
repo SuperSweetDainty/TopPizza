@@ -16,7 +16,7 @@ final class MenuPresenter: MenuPresenterProtocol {
         view?.reloadData()
     }
 
-    private func fetchMeals() {
+    func fetchMeals() {
         networkService.fetchMeals { [weak self] result in
             DispatchQueue.main.async {
                 switch result {

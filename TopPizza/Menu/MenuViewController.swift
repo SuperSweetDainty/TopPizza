@@ -7,8 +7,7 @@ final class MenuViewController: UIViewController {
 
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
-//    private var promoScrollView = UIScrollView()
-    private var promoScrollView: UIView?  // Используется, чтобы не удалять баннеры
+    private var promoScrollView: UIView?
     private let promoStackView = UIStackView()
     private var presenter: MenuPresenter!
     private var meals: [Meal] = []
@@ -54,7 +53,6 @@ final class MenuViewController: UIViewController {
 
         scrollView.addSubview(bannersStack)
 
-        // Constraints for bannersStack inside scrollView
         NSLayoutConstraint.activate([
             bannersStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             bannersStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
@@ -67,7 +65,6 @@ final class MenuViewController: UIViewController {
         container.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(scrollView)
 
-        // Constraints for scrollView inside container
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: container.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
@@ -76,10 +73,8 @@ final class MenuViewController: UIViewController {
             scrollView.heightAnchor.constraint(equalToConstant: 112)
         ])
 
-        // Добавляем контейнер в contentStackView
         contentStackView.addArrangedSubview(container)
 
-        // ✅ Чтобы не удалять при очистке: сохрани как свойство
         self.promoScrollView = container
     }
 
@@ -185,15 +180,20 @@ final class MenuViewController: UIViewController {
         imageView.contentMode = .scaleAspectFill
         imageView.layer.cornerRadius = 10
 
-        if let urlString = imageURL, let url = URL(string: urlString) {
-            // загружаем картинку из сети
-            URLSession.shared.dataTask(with: url) { data, _, _ in
-                if let data = data, let image = UIImage(data: data) {
-                    DispatchQueue.main.async {
-                        imageView.image = image
+        if let imageURL = imageURL {
+            if let localImage = UIImage(named: imageURL) {
+                imageView.image = localImage
+            } else if let url = URL(string: imageURL), UIApplication.shared.canOpenURL(url) {
+                URLSession.shared.dataTask(with: url) { data, _, _ in
+                    if let data = data, let image = UIImage(data: data) {
+                        DispatchQueue.main.async {
+                            imageView.image = image
+                        }
                     }
-                }
-            }.resume()
+                }.resume()
+            } else {
+                imageView.image = UIImage(named: "MockPizza")
+            }
         } else {
             imageView.image = UIImage(named: "MockPizza")
         }
@@ -237,7 +237,6 @@ final class MenuViewController: UIViewController {
 
         return container
     }
-
 }
 
 extension MenuViewController: MenuViewProtocol {
@@ -259,9 +258,9 @@ extension MenuViewController: MenuViewProtocol {
                 let item = presenter.item(at: IndexPath(row: row, section: section))
                 let itemView = createPizzaItem(
                     title: item.name,
-                    description: "Вкусная пицца",
+                    description: item.description,
                     price: item.price,
-                    imageURL: nil
+                    imageURL: item.imageName
                 )
                 stack.addArrangedSubview(itemView)
             }
@@ -280,7 +279,6 @@ extension MenuViewController: MenuViewProtocol {
     func showMeals(_ meals: [Meal]) {
         self.meals = meals
 
-        // Удаляем только предыдущие блоки с блюдами, оставляя баннер и категории
         for view in contentStackView.arrangedSubviews {
             if view != promoScrollView && view != categoriesScrollView {
                 contentStackView.removeArrangedSubview(view)
@@ -288,7 +286,6 @@ extension MenuViewController: MenuViewProtocol {
             }
         }
 
-        // Добавляем моковые пиццы без заголовка
         let mockPizzas = [
             MenuItem(name: "Ветчина и грибы ", price: "от 345 р", imageName: "MockPizza", description: "Ветчина,шампиньоны, увеличинная порция моцареллы, томатный соус"),
             MenuItem(name: "Баварские колбаски", price: "от 345 р", imageName: "MockPizza2", description: "Баварски колбаски,ветчина, пикантная пепперони, острая чоризо, моцарелла, томатный соус"),
@@ -305,27 +302,19 @@ extension MenuViewController: MenuViewProtocol {
                 title: item.name,
                 description: item.description,
                 price: item.price,
-                imageURL: nil
+                imageURL: item.imageName
             )
             pizzaStack.addArrangedSubview(itemView)
         }
 
         contentStackView.addArrangedSubview(pizzaStack)
-
-        // Добавляем блюда с сервера
         setupPizzaListView(with: meals)
     }
 
     private func setupPizzaListView(with meals: [Meal]) {
         let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Без категории" }
 
-        for (category, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
-            // Название секции (категории)
-            let categoryLabel = UILabel()
-            categoryLabel.text = category
-            categoryLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
-            contentStackView.addArrangedSubview(categoryLabel)
-
+        for (_, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
             let stack = UIStackView()
             stack.axis = .vertical
             stack.spacing = 24

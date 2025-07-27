@@ -7,5 +7,5 @@ struct Meal: Decodable {
     let strMeal: String
     let strInstructions: String?
     let strMealThumb: String
-    let strCategory: String? //добавлено
+    let strCategory: String?
 }
