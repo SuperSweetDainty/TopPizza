@@ -9,9 +9,13 @@ final class MenuViewController: UIViewController {
     private let contentStackView = UIStackView()
     private let promoScrollView = UIScrollView()
     private let promoStackView = UIStackView()
-
+    private var presenter: MenuPresenter!
+    private var meals: [Meal] = []
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        presenter = MenuPresenter(view: self)
+        presenter.viewDidLoad()
         setupScrollView()
         setupContent()
         cityLabel.isHidden = true
@@ -56,7 +60,6 @@ final class MenuViewController: UIViewController {
             bannersStack.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor)
         ])
 
-        // ✅ Оборачиваем в контейнер для вставки в contentStackView
         let container = UIView()
         container.addSubview(scrollView)
 
@@ -68,7 +71,6 @@ final class MenuViewController: UIViewController {
             scrollView.heightAnchor.constraint(equalToConstant: 112)
         ])
 
-        // ✅ Добавляем контейнер в contentStackView
         contentStackView.addArrangedSubview(container)
     }
 
@@ -101,11 +103,13 @@ final class MenuViewController: UIViewController {
 
     private func setupContent() {
         let categories = createCategories()
-        let menu = createPizzaList()
 
         setupPromoBannersSection()
         contentStackView.addArrangedSubview(categories)
-        contentStackView.addArrangedSubview(menu)    }
+        
+        // меню добавится позже, когда придут данные с API
+    }
+
     
     private func createCategories() -> UIView {
         let scroll = UIScrollView()
@@ -129,7 +133,6 @@ final class MenuViewController: UIViewController {
             button.layer.cornerRadius = 20
             button.translatesAutoresizingMaskIntoConstraints = false
 
-            // Размеры и центрирование
             NSLayoutConstraint.activate([
                 button.widthAnchor.constraint(equalToConstant: 88),
                 button.heightAnchor.constraint(equalToConstant: 40)
@@ -165,28 +168,42 @@ final class MenuViewController: UIViewController {
         return container
     }
 
-    private func createPizzaList() -> UIView {
-        let stack = UIStackView()
-        stack.axis = .vertical
-        stack.spacing = 24
+//    private func createPizzaList() -> UIView {
+//        let stack = UIStackView()
+//        stack.axis = .vertical
+//        stack.spacing = 24
+//
+//        let pizzas = ["Ветчина и грибы", "Баварские колбаски", "Нежный лосось"]
+//        pizzas.forEach { name in
+//            let pizzaView = createPizzaItem(title: name, description: "Описание пиццы", price: "от 345 р", imageURL: <#String?#>)
+//            stack.addArrangedSubview(pizzaView)
+//        }
+//
+//        return stack
+//    }
 
-        let pizzas = ["Ветчина и грибы", "Баварские колбаски", "Нежный лосось"]
-        pizzas.forEach { name in
-            let pizzaView = createPizzaItem(title: name, description: "Описание пиццы", price: "от 345 р")
-            stack.addArrangedSubview(pizzaView)
-        }
-
-        return stack
-    }
-
-    private func createPizzaItem(title: String, description: String, price: String) -> UIView {
+    private func createPizzaItem(title: String, description: String, price: String, imageURL: String?) -> UIView {
         let container = UIView()
-        let image = UIImageView(image: UIImage(named: "MockPizza"))
-        image.translatesAutoresizingMaskIntoConstraints = false
-        image.widthAnchor.constraint(equalToConstant: 132).isActive = true
-        image.heightAnchor.constraint(equalToConstant: 132).isActive = true
-        image.clipsToBounds = true
-        image.contentMode = .scaleAspectFill
+        let imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.widthAnchor.constraint(equalToConstant: 132).isActive = true
+        imageView.heightAnchor.constraint(equalToConstant: 132).isActive = true
+        imageView.clipsToBounds = true
+        imageView.contentMode = .scaleAspectFill
+        imageView.layer.cornerRadius = 10
+
+        if let urlString = imageURL, let url = URL(string: urlString) {
+            // загружаем картинку из сети
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                if let data = data, let image = UIImage(data: data) {
+                    DispatchQueue.main.async {
+                        imageView.image = image
+                    }
+                }
+            }.resume()
+        } else {
+            imageView.image = UIImage(named: "MockPizza")
+        }
 
         let titleLabel = UILabel()
         titleLabel.text = title
@@ -210,7 +227,7 @@ final class MenuViewController: UIViewController {
         rightStack.axis = .vertical
         rightStack.spacing = 4
 
-        let hStack = UIStackView(arrangedSubviews: [image, rightStack])
+        let hStack = UIStackView(arrangedSubviews: [imageView, rightStack])
         hStack.axis = .horizontal
         hStack.spacing = 16
         hStack.alignment = .center
@@ -226,5 +243,57 @@ final class MenuViewController: UIViewController {
         ])
 
         return container
+    }
+
+}
+
+extension MenuViewController: MenuViewProtocol {
+    func reloadData() {
+    }
+
+    func scrollToSection(index: Int) {
+    }
+
+    func showError(message: String) {
+        showBanner(message: message, textColor: .systemRed, iconName: "ExclamationMarkCircle")
+    }
+    
+    func showMeals(_ meals: [Meal]) {
+        self.meals = meals
+        for view in contentStackView.arrangedSubviews {
+            if view is UIStackView && view != promoStackView {
+                contentStackView.removeArrangedSubview(view)
+                view.removeFromSuperview()
+            }
+        }
+        setupPizzaListView(with: meals)
+    }
+
+    private func setupPizzaListView(with meals: [Meal]) {
+        let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Без категории" }
+
+        for (category, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
+            // Название секции (категории)
+            let categoryLabel = UILabel()
+            categoryLabel.text = category
+            categoryLabel.font = UIFont.systemFont(ofSize: 20, weight: .bold)
+            contentStackView.addArrangedSubview(categoryLabel)
+
+            let stack = UIStackView()
+            stack.axis = .vertical
+            stack.spacing = 24
+
+            for meal in meals {
+                let itemView = createPizzaItem(
+                    title: meal.strMeal,
+                    description: meal.strInstructions ?? "Без описания",
+                    price: "от 400 р",
+                    imageURL: meal.strMealThumb
+                )
+                stack.addArrangedSubview(itemView)
+            }
+
+            contentStackView.addArrangedSubview(stack)
+        }
     }
 }

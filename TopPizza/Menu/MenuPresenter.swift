@@ -2,30 +2,37 @@ import Foundation
 
 final class MenuPresenter: MenuPresenterProtocol {
     private weak var view: MenuViewProtocol?
+    private let networkService: NetworkServiceProtocol
     private var categories: [MenuCategory] = []
 
-    init(view: MenuViewProtocol) {
-        self.view = view
-    }
+    init(view: MenuViewProtocol, networkService: NetworkServiceProtocol = NetworkService()) {
+           self.view = view
+           self.networkService = networkService
+       }
 
     func viewDidLoad() {
-        loadMockData()
-        view?.reloadData()
+//        loadMockData()
+        fetchMeals()
+//        view?.reloadData()  !!!
     }
 
-    func loadMockData() {
-        categories = [
-            MenuCategory(title: "Пицца", items: [
-                MenuItem(name: "Маргарита", price: "8.99", imageName: "pizza1"),
-                MenuItem(name: "Пепперони", price: "9.99", imageName: "pizza2")
-            ]),
-            MenuCategory(title: "Напитки", items: [
-                MenuItem(name: "Кола", price: "1.99", imageName: "cola"),
-                MenuItem(name: "Фанта", price: "1.99", imageName: "fanta")
-            ])
-        ]
+    private func fetchMeals() {
+        networkService.fetchMeals { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let meals):
+                    self?.view?.showMeals(meals)
+                case .failure(let error):
+                    self?.view?.showBanner(
+                        message: "Ошибка загрузки: \(error.localizedDescription)",
+                        textColor: .red,
+                        iconName: "XmarkCircle"
+                    )
+                }
+            }
+        }
     }
-
+    
     var numberOfSections: Int {
         categories.count
     }
