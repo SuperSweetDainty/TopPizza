@@ -4,6 +4,7 @@ struct MenuItem {
     let name: String
     let price: String
     let imageName: String
+    let description: String
 }
 
 struct MenuCategory {

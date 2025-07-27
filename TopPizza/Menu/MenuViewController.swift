@@ -7,10 +7,12 @@ final class MenuViewController: UIViewController {
 
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
-    private let promoScrollView = UIScrollView()
+//    private var promoScrollView = UIScrollView()
+    private var promoScrollView: UIView?  // Используется, чтобы не удалять баннеры
     private let promoStackView = UIStackView()
     private var presenter: MenuPresenter!
     private var meals: [Meal] = []
+    private var categoriesScrollView: UIView?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -29,6 +31,7 @@ final class MenuViewController: UIViewController {
         let scrollView = UIScrollView()
         scrollView.showsHorizontalScrollIndicator = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
+        scrollView.alwaysBounceHorizontal = true
 
         let bannersStack = UIStackView()
         bannersStack.axis = .horizontal
@@ -51,18 +54,20 @@ final class MenuViewController: UIViewController {
 
         scrollView.addSubview(bannersStack)
 
+        // Constraints for bannersStack inside scrollView
         NSLayoutConstraint.activate([
             bannersStack.topAnchor.constraint(equalTo: scrollView.contentLayoutGuide.topAnchor),
             bannersStack.leadingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.leadingAnchor, constant: 16),
             bannersStack.trailingAnchor.constraint(equalTo: scrollView.contentLayoutGuide.trailingAnchor, constant: -16),
             bannersStack.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
-
-            bannersStack.heightAnchor.constraint(equalTo: scrollView.frameLayoutGuide.heightAnchor)
+            bannersStack.heightAnchor.constraint(equalToConstant: 112)
         ])
 
         let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(scrollView)
 
+        // Constraints for scrollView inside container
         NSLayoutConstraint.activate([
             scrollView.topAnchor.constraint(equalTo: container.topAnchor),
             scrollView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
@@ -71,7 +76,11 @@ final class MenuViewController: UIViewController {
             scrollView.heightAnchor.constraint(equalToConstant: 112)
         ])
 
+        // Добавляем контейнер в contentStackView
         contentStackView.addArrangedSubview(container)
+
+        // ✅ Чтобы не удалять при очистке: сохрани как свойство
+        self.promoScrollView = container
     }
 
 
@@ -102,14 +111,12 @@ final class MenuViewController: UIViewController {
     }
 
     private func setupContent() {
-        let categories = createCategories()
-
         setupPromoBannersSection()
-        contentStackView.addArrangedSubview(categories)
-        
-        // меню добавится позже, когда придут данные с API
-    }
 
+        let categoriesView = createCategories()
+        categoriesScrollView = categoriesView
+        contentStackView.addArrangedSubview(categoriesView)
+    }
     
     private func createCategories() -> UIView {
         let scroll = UIScrollView()
@@ -164,23 +171,9 @@ final class MenuViewController: UIViewController {
             scroll.bottomAnchor.constraint(equalTo: container.bottomAnchor),
             scroll.heightAnchor.constraint(equalToConstant: 40)
         ])
-
+        self.categoriesScrollView = container
         return container
     }
-
-//    private func createPizzaList() -> UIView {
-//        let stack = UIStackView()
-//        stack.axis = .vertical
-//        stack.spacing = 24
-//
-//        let pizzas = ["Ветчина и грибы", "Баварские колбаски", "Нежный лосось"]
-//        pizzas.forEach { name in
-//            let pizzaView = createPizzaItem(title: name, description: "Описание пиццы", price: "от 345 р", imageURL: <#String?#>)
-//            stack.addArrangedSubview(pizzaView)
-//        }
-//
-//        return stack
-//    }
 
     private func createPizzaItem(title: String, description: String, price: String, imageURL: String?) -> UIView {
         let container = UIView()
@@ -249,23 +242,77 @@ final class MenuViewController: UIViewController {
 
 extension MenuViewController: MenuViewProtocol {
     func reloadData() {
+        // очищаем старое
+        for view in contentStackView.arrangedSubviews {
+            if view != promoStackView && !(view is UIScrollView) {
+                contentStackView.removeArrangedSubview(view)
+                view.removeFromSuperview()
+            }
+        }
+
+        for section in 0..<presenter.numberOfSections {
+            let stack = UIStackView()
+            stack.axis = .vertical
+            stack.spacing = 24
+
+            for row in 0..<presenter.numberOfItems(in: section) {
+                let item = presenter.item(at: IndexPath(row: row, section: section))
+                let itemView = createPizzaItem(
+                    title: item.name,
+                    description: "Вкусная пицца",
+                    price: item.price,
+                    imageURL: nil
+                )
+                stack.addArrangedSubview(itemView)
+            }
+
+            contentStackView.addArrangedSubview(stack)
+        }
     }
 
     func scrollToSection(index: Int) {
     }
 
     func showError(message: String) {
-        showBanner(message: message, textColor: .systemRed, iconName: "ExclamationMarkCircle")
+        showBanner(message: message, textColor: .systemRed, iconName: "CloseCircle")
     }
     
     func showMeals(_ meals: [Meal]) {
         self.meals = meals
+
+        // Удаляем только предыдущие блоки с блюдами, оставляя баннер и категории
         for view in contentStackView.arrangedSubviews {
-            if view is UIStackView && view != promoStackView {
+            if view != promoScrollView && view != categoriesScrollView {
                 contentStackView.removeArrangedSubview(view)
                 view.removeFromSuperview()
             }
         }
+
+        // Добавляем моковые пиццы без заголовка
+        let mockPizzas = [
+            MenuItem(name: "Ветчина и грибы ", price: "от 345 р", imageName: "MockPizza", description: "Ветчина,шампиньоны, увеличинная порция моцареллы, томатный соус"),
+            MenuItem(name: "Баварские колбаски", price: "от 345 р", imageName: "MockPizza2", description: "Баварски колбаски,ветчина, пикантная пепперони, острая чоризо, моцарелла, томатный соус"),
+            MenuItem(name: "Нежный лосось", price: "от 345 р", imageName: "MockPizza3", description: "Лосось, томаты черри, моцарелла, соус песто"),
+            MenuItem(name: "Четыре сыра", price: "от 345 р", imageName: "MockPizza4", description: "Соус Карбонара, Сыр Моцарелла, Сыр Пармезан, Сыр Роккфорти, Сыр Чеддер (тёртый)")
+        ]
+
+        let pizzaStack = UIStackView()
+        pizzaStack.axis = .vertical
+        pizzaStack.spacing = 24
+
+        for item in mockPizzas {
+            let itemView = createPizzaItem(
+                title: item.name,
+                description: item.description,
+                price: item.price,
+                imageURL: nil
+            )
+            pizzaStack.addArrangedSubview(itemView)
+        }
+
+        contentStackView.addArrangedSubview(pizzaStack)
+
+        // Добавляем блюда с сервера
         setupPizzaListView(with: meals)
     }
 

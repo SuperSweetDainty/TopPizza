@@ -11,9 +11,9 @@ final class MenuPresenter: MenuPresenterProtocol {
        }
 
     func viewDidLoad() {
-//        loadMockData()
         fetchMeals()
-//        view?.reloadData()  !!!
+        loadStaticPizzaCategory()
+        view?.reloadData()
     }
 
     private func fetchMeals() {
@@ -51,5 +51,17 @@ final class MenuPresenter: MenuPresenterProtocol {
 
     func didTapCategory(at index: Int) {
         view?.scrollToSection(index: index)
+    }
+    
+    private func loadStaticPizzaCategory() {
+        let pizzaItems = [
+            MenuItem(name: "Ветчина и грибы ", price: "от 345 р", imageName: "MockPizza", description: "Ветчина,шампиньоны, увеличинная порция моцареллы, томатный соус"),
+            MenuItem(name: "Баварские колбаски", price: "от 345 р", imageName: "MockPizza2", description: "Баварски колбаски,ветчина, пикантная пепперони, острая чоризо, моцарелла, томатный соус"),
+            MenuItem(name: "Нежный лосось", price: "от 345 р", imageName: "MockPizza3", description: "Лосось, томаты черри, моцарелла, соус песто"),
+            MenuItem(name: "Четыре сыра", price: "от 345 р", imageName: "MockPizza4", description: "Соус Карбонара, Сыр Моцарелла, Сыр Пармезан, Сыр Роккфорти, Сыр Чеддер (тёртый)")
+        ]
+
+        let pizzaCategory = MenuCategory(title: "Пицца", items: pizzaItems)
+        categories = [pizzaCategory]
     }
 }
