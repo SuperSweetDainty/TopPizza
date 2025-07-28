@@ -126,7 +126,7 @@
                                     <userDefinedRuntimeAttribute type="boolean" keyPath="layer.masksToBounds" value="YES"/>
                                 </userDefinedRuntimeAttributes>
                                 <connections>
-                                    <action selector="EnterButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="vpg-Xm-0hc"/>
+                                    <action selector="enterButtonTapped:" destination="BYZ-38-t0r" eventType="touchUpInside" id="o3h-WZ-yZw"/>
                                 </connections>
                             </button>
                         </subviews>
@@ -160,10 +160,10 @@
                         </constraints>
                     </view>
                     <connections>
-                        <outlet property="enterButton" destination="IUN-hr-Yuy" id="E7g-P7-Z3f"/>
-                        <outlet property="enterButtonFrameBottomConstraint" destination="I9z-wB-Ad5" id="Rsv-8K-Kfa"/>
-                        <outlet property="loginTextField" destination="ftM-7o-cRC" id="ZDV-PU-4mH"/>
-                        <outlet property="passwordTextField" destination="UCB-aN-QAt" id="m0o-q2-PsF"/>
+                        <outlet property="enterButton" destination="IUN-hr-Yuy" id="fdU-SS-pZR"/>
+                        <outlet property="enterButtonFrameBottomConstraint" destination="DYu-vc-ky3" id="6wg-zj-iEL"/>
+                        <outlet property="loginTextField" destination="ftM-7o-cRC" id="osz-2h-vvA"/>
+                        <outlet property="passwordTextField" destination="UCB-aN-QAt" id="OIm-OJ-NOY"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>

@@ -1,145 +1,71 @@
 import UIKit
 
-class AuthViewController: UIViewController, UITextFieldDelegate {
-
+class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtocol {
+    
     @IBOutlet weak var enterButtonFrameBottomConstraint: NSLayoutConstraint!
     @IBOutlet weak var enterButton: UIButton!
     @IBOutlet weak var loginTextField: UITextField!
     @IBOutlet weak var passwordTextField: UITextField!
-
+    
+    private var presenter: AuthPresenterProtocol!
     private var isPasswordVisible = false
     private var eyeButton: UIButton!
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
-
-        setupTextField(textField: loginTextField, placeholder: "Логин")
-        setupTextField(textField: passwordTextField, placeholder: "Пароль")
-        setupButtonBorder()
-
-        loginTextField.delegate = self
-        passwordTextField.delegate = self
-
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        view.addGestureRecognizer(tapGesture)
-
-        enterButton.alpha = 0.4
-        passwordTextField.rightViewMode = .never
-    }
-
-    deinit {
-        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
-
-    @objc func keyboardWillShow(notification: NSNotification) {
-        guard let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else {
-            return
-        }
-
-        enterButtonFrameBottomConstraint.constant = keyboardSize.height - view.safeAreaInsets.bottom
-        UIView.animate(withDuration: 0.3) {
-            self.view.layoutIfNeeded()
-        }
-    }
-
-    @objc func keyboardWillHide(notification: NSNotification) {
-        enterButtonFrameBottomConstraint.constant = 0
-        UIView.animate(withDuration: 0.3) {
-            self.view.layoutIfNeeded()
-        }
-    }
-
-    @objc func dismissKeyboard() {
-        view.endEditing(true)
-    }
-
-    @IBAction func EnterButtonTapped(_ sender: UIButton) {
-        dismissKeyboard()
-
-           let login = loginTextField.text ?? ""
-           let password = passwordTextField.text ?? ""
-
-           if login == "Qwerty123" && password == "Qwerty123" {
-               UserDefaults.standard.set(true, forKey: "shouldShowSuccessBanner")
-               navigateToMainScreen()
-
-           } else {
-               showBanner(
-                   message: "Неверный логин или пароль",
-                   textColor: UIColor(named: "BannerRed") ?? .systemRed,
-                   iconName: "CloseCircle"
-               )
-
-           }
+        
+        presenter = AuthPresenter(view: self)
+        setupUI()
+        setupKeyboardObservers()
     }
     
-    func navigateToMainScreen() {
-        let storyboard = UIStoryboard(name: "Main", bundle: nil)
-        guard let mainTabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController else {
-            print("Не удалось найти MainTabBarController")
-            return
-        }
-
-        mainTabBarVC.modalPresentationStyle = .fullScreen
-        present(mainTabBarVC, animated: true)
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
-
-    func setupTextField(textField: UITextField, placeholder: String) {
-        textField.layer.borderColor = (UIColor(named: "Grey") ?? .lightGray).cgColor
+    
+    private func setupUI() {
+        [loginTextField, passwordTextField].forEach {
+            setupTextField($0)
+            $0?.delegate = self
+        }
+        
+        setupPasswordVisibilityButton()
+        setupButtonBorder()
+        
+        enterButton.alpha = 0.4
+        passwordTextField.rightViewMode = .never
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    private func setupKeyboardObservers() {
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+    }
+    
+    private func setupTextField(_ textField: UITextField?) {
+        guard let textField = textField else { return }
+        textField.layer.borderColor = UIColor(named: "Grey")?.cgColor ?? UIColor.lightGray.cgColor
         textField.layer.borderWidth = 1
         textField.layer.masksToBounds = true
-
-        let paddingView = UIView(frame: CGRect(x: 0, y: 0, width: 44, height: textField.frame.size.height))
-        textField.leftView = paddingView
+        
+        let padding = UIView(frame: CGRect(x: 0, y: 0, width: 44, height: 0))
+        textField.leftView = padding
         textField.leftViewMode = .always
-
-        textField.attributedPlaceholder = NSAttributedString(string: placeholder, attributes: [
-            NSAttributedString.Key.foregroundColor: UIColor(named: "Grey") ?? .lightGray
-        ])
-
+        
         textField.autocorrectionType = .no
         textField.autocapitalizationType = .none
         textField.spellCheckingType = .no
         textField.textContentType = .oneTimeCode
-        textField.isSecureTextEntry = (textField == passwordTextField)
-        setupPasswordVisibilityButton()
+        
+        textField.attributedPlaceholder = NSAttributedString(string: textField == loginTextField ? "Логин" : "Пароль", attributes: [
+            .foregroundColor: UIColor(named: "Grey") ?? .lightGray
+        ])
+        
+        textField.isSecureTextEntry = textField == passwordTextField
     }
-
-    func setupButtonBorder() {
-        enterButton.layer.borderWidth = 1
-        enterButton.layer.borderColor = (UIColor(named: "ButtonBorderGrey") ?? .gray).cgColor
-        enterButton.layer.masksToBounds = true
-    }
-
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        let loginText = loginTextField.text ?? ""
-        let passwordText = passwordTextField.text ?? ""
-
-        let isAnyTextFieldFilled = !(loginText.isEmpty && passwordText.isEmpty)
-
-        if isAnyTextFieldFilled {
-            UIView.animate(withDuration: 0.2) {
-                self.enterButton.alpha = 1.0
-            }
-        } else {
-            UIView.animate(withDuration: 0.2) {
-                self.enterButton.alpha = 0.4
-            }
-        }
-
-        if textField == passwordTextField {
-            passwordTextField.rightViewMode = string.isEmpty && range.location == 0 ? .never : .always
-        }
-
-        return true
-    }
-
-    // MARK: - Password Visibility
-
+    
     func setupPasswordVisibilityButton() {
         eyeButton = UIButton(type: .custom)
         eyeButton.setImage(UIImage(named: "EyeClose"), for: .normal)
@@ -155,12 +81,66 @@ class AuthViewController: UIViewController, UITextFieldDelegate {
         passwordTextField.rightView = containerView
     }
 
-
-    @objc func togglePasswordVisibility() {
+    
+    private func setupButtonBorder() {
+        enterButton.layer.borderWidth = 1
+        enterButton.layer.borderColor = UIColor(named: "ButtonBorderGrey")?.cgColor ?? UIColor.gray.cgColor
+        enterButton.layer.masksToBounds = true
+    }
+    
+    @objc private func keyboardWillShow(notification: NSNotification) {
+        guard let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
+        enterButtonFrameBottomConstraint.constant = keyboardSize.height - view.safeAreaInsets.bottom
+        UIView.animate(withDuration: 0.3) { self.view.layoutIfNeeded() }
+    }
+    
+    @objc private func keyboardWillHide(notification: NSNotification) {
+        enterButtonFrameBottomConstraint.constant = 0
+        UIView.animate(withDuration: 0.3) { self.view.layoutIfNeeded() }
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    @objc private func togglePasswordVisibility() {
         isPasswordVisible.toggle()
         passwordTextField.isSecureTextEntry = !isPasswordVisible
-
+        
         let imageName = isPasswordVisible ? "EyeOpen" : "EyeClose"
         eyeButton.setImage(UIImage(named: imageName), for: .normal)
     }
-}
+    
+    @IBAction func enterButtonTapped(_ sender: UIButton) {
+        dismissKeyboard()
+        presenter.loginTapped(username: loginTextField.text, password: passwordTextField.text)
+    }
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
+            self.presenter.validateInputs(username: self.loginTextField.text, password: self.passwordTextField.text)
+            self.passwordTextField.rightViewMode = (self.passwordTextField.text ?? "").isEmpty ? .never : .always
+        }
+        return true
+    }
+    
+    func showError(message: String) {
+           showBanner(message: message, textColor: UIColor(named: "BannerRed") ?? .systemRed, iconName: "CloseCircle")
+       }
+
+       func navigateToMainScreen() {
+           let storyboard = UIStoryboard(name: "Main", bundle: nil)
+           guard let mainTabBarVC = storyboard.instantiateViewController(withIdentifier: "MainTabBarController") as? UITabBarController else {
+               print("Не удалось найти MainTabBarController")
+               return
+           }
+           mainTabBarVC.modalPresentationStyle = .fullScreen
+           present(mainTabBarVC, animated: true)
+       }
+
+       func updateEnterButton(isEnabled: Bool) {
+           UIView.animate(withDuration: 0.2) {
+               self.enterButton.alpha = isEnabled ? 1.0 : 0.4
+           }
+       }
+   }

@@ -1,7 +1,5 @@
-//
-//  AuthViewProtocol.swift
-//  TopPizza
-//
-//  Created by Даниил Лапутин on 23.07.25.
-//
-
+protocol AuthViewProtocol: AnyObject {
+    func showError(message: String)
+    func navigateToMainScreen()
+    func updateEnterButton(isEnabled: Bool)
+}
