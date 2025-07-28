@@ -25,7 +25,6 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
         presenter.viewDidLoad()
         setupScrollView()
         setupStickyCategoriesContainer()
-        stickyCategoriesContainer.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             stickyCategoriesContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
@@ -47,7 +46,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
     
     private func setupStickyCategories() {
         stickyCategoriesView = createCategories()
-        guard let stickyCategoriesView = stickyCategoriesView else { return }
+        guard let stickyCategoriesView else { return }
         
         stickyCategoriesContainer.addSubview(stickyCategoriesView)
         stickyCategoriesView.translatesAutoresizingMaskIntoConstraints = false
@@ -171,7 +170,6 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
             stickyContainerView.heightAnchor.constraint(equalToConstant: 40)
         ])
 
-        applyStickyShadow()
         scrollView.delegate = self
     }
 
@@ -404,16 +402,12 @@ extension MenuViewController: MenuViewProtocol {
         let sectionFrame = sectionView.convert(sectionView.bounds, to: scrollView)
 
         let categoryBarHeight = categoriesScrollView?.frame.height ?? 40
-        let extraPadding: CGFloat = -40
+        let extraPadding: CGFloat = 0
 
         let targetOffsetY = sectionFrame.minY - categoryBarHeight - extraPadding
         let adjustedOffset = CGPoint(x: 0, y: max(0, targetOffsetY))
 
         scrollView.setContentOffset(adjustedOffset, animated: true)
-    }
-
-    func showError(message: String) {
-        showBanner(message: message, textColor: .systemRed, iconName: "CloseCircle")
     }
     
     func showMeals(_ meals: [Meal]) {
@@ -461,7 +455,7 @@ extension MenuViewController: MenuViewProtocol {
                     name: name,
                     price: "from 2.5$",
                     imageName: image,
-                    description: meal.strInstructions ?? "Описание отсутствует"
+                    description: meal.strInstructions ?? "Description is missing"
                 )
             }
 
@@ -515,7 +509,7 @@ extension MenuViewController: MenuViewProtocol {
 
             if !isLast {
                 let separator = UIView()
-                separator.backgroundColor = UIColor(named: "BackgroundColor")
+                separator.backgroundColor = .background
                 separator.translatesAutoresizingMaskIntoConstraints = false
                 NSLayoutConstraint.activate([
                     separator.heightAnchor.constraint(equalToConstant: 1)
