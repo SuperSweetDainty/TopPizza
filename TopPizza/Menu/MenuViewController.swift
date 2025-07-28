@@ -283,7 +283,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
             scroll.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             scroll.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            scroll.heightAnchor.constraint(equalToConstant: 90)
+            scroll.heightAnchor.constraint(equalToConstant: 48)
         ])
         self.categoriesScrollView = container
         return container
@@ -447,20 +447,32 @@ extension MenuViewController: MenuViewProtocol {
         let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Uncategorized" }
 
         for (_, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
-            let items = meals.map {
-                MenuItem(
-                    name: $0.strMeal ?? "Без названия",
+
+            let items = meals.compactMap { meal -> MenuItem? in
+                guard
+                    let name = meal.strMeal,
+                    let image = meal.strMealThumb,
+                    !image.isEmpty
+                else {
+                    return nil
+                }
+
+                return MenuItem(
+                    name: name,
                     price: "from 2.5$",
-                    imageName: $0.strMealThumb ?? "",
-                    description: $0.strInstructions ?? "Описание отсутствует"
+                    imageName: image,
+                    description: meal.strInstructions ?? "Описание отсутствует"
                 )
             }
+
+            guard !items.isEmpty else { continue }
 
             let stack = createItemsStack(from: items)
             contentStackView.addArrangedSubview(stack)
             sectionViews.append(stack)
         }
     }
+
 
     
     private func createItemsStack(from items: [MenuItem]) -> UIStackView {
