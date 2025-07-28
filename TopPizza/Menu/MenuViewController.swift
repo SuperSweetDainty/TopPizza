@@ -31,7 +31,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
             stickyCategoriesContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             stickyCategoriesContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             stickyCategoriesContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            stickyCategoriesContainer.heightAnchor.constraint(equalToConstant: 50) // высота категорий
+            stickyCategoriesContainer.heightAnchor.constraint(equalToConstant: 50)
         ])
 
         stickyCategoriesContainer.isHidden = true
@@ -239,7 +239,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
         stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let categories = ["Пицца", "Говядина", "Курица", "Десерт"]
+        let categories = ["Pizza", "Beef", "Chicken", "Dessert"]
 
         for (index, title) in categories.enumerated() {
             let button = UIButton(type: .system)
@@ -283,7 +283,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
             scroll.leadingAnchor.constraint(equalTo: container.leadingAnchor),
             scroll.trailingAnchor.constraint(equalTo: container.trailingAnchor),
             scroll.bottomAnchor.constraint(equalTo: container.bottomAnchor),
-            scroll.heightAnchor.constraint(equalToConstant: 40)
+            scroll.heightAnchor.constraint(equalToConstant: 90)
         ])
         self.categoriesScrollView = container
         return container
@@ -429,10 +429,10 @@ extension MenuViewController: MenuViewProtocol {
         sectionViews.removeAll()
 
         let mockPizzas = [
-            MenuItem(name: "Ветчина и грибы ", price: "от 345 р", imageName: "MockPizza", description: "Ветчина,шампиньоны, увеличинная порция моцареллы, томатный соус"),
-            MenuItem(name: "Баварские колбаски", price: "от 345 р", imageName: "MockPizza2", description: "Баварски колбаски,ветчина, пикантная пепперони, острая чоризо, моцарелла, томатный соус"),
-            MenuItem(name: "Нежный лосось", price: "от 345 р", imageName: "MockPizza3", description: "Лосось, томаты черри, моцарелла, соус песто"),
-            MenuItem(name: "Четыре сыра", price: "от 345 р", imageName: "MockPizza4", description: "Соус Карбонара, Сыр Моцарелла, Сыр Пармезан, Сыр Роккфорти, Сыр Чеддер (тёртый)")
+            MenuItem(name: "Ham and mushrooms ", price: "from 3$", imageName: "MockPizza", description: "Ham, champignons, extra mozzarella, tomato sauce"),
+            MenuItem(name: "Bavarian sausages", price: "from 3$", imageName: "MockPizza2", description: "Bavarian sausages, ham, spicy pepperoni, spicy chorizo, mozzarella, tomato sauce"),
+            MenuItem(name: "Tender salmon", price: "from 3$", imageName: "MockPizza3", description: "Salmon, cherry tomatoes, mozzarella, pesto sauce"),
+            MenuItem(name: "Four cheeses", price: "from 3$", imageName: "MockPizza4", description: "Carbonara sauce, Mozzarella cheese, Parmesan cheese, Roccaforti cheese, Cheddar cheese (grated)")
         ]
 
         let mockStack = createItemsStack(from: mockPizzas)
@@ -444,15 +444,15 @@ extension MenuViewController: MenuViewProtocol {
 
 
     private func setupPizzaListView(with meals: [Meal]) {
-        let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Без категории" }
+        let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Uncategorized" }
 
         for (_, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
             let items = meals.map {
                 MenuItem(
                     name: $0.strMeal,
-                    price: "от 400 р",
+                    price: "from 2.5$",
                     imageName: $0.strMealThumb,
-                    description: $0.strInstructions ?? "Без описания"
+                    description: $0.strInstructions ?? "Uncategorized"
                 )
             }
 
@@ -491,8 +491,6 @@ extension MenuViewController: MenuViewProtocol {
 
             container.layer.cornerRadius = 20
             container.layer.maskedCorners = corners
-
-            // Constraints для itemView внутри container
             itemView.translatesAutoresizingMaskIntoConstraints = false
             NSLayoutConstraint.activate([
                 itemView.topAnchor.constraint(equalTo: container.topAnchor),
