@@ -26,7 +26,7 @@ final class MenuPresenter: MenuPresenterProtocol {
                     self?.view?.showBanner(
                         message: "Ошибка загрузки: \(error.localizedDescription)",
                         textColor: .red,
-                        iconName: "XmarkCircle"
+                        iconName: "CloseCircle"
                     )
                 }
             }

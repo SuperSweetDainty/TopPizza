@@ -17,6 +17,9 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
         presenter = AuthPresenter(view: self)
         setupUI()
         setupKeyboardObservers()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
     deinit {
@@ -88,15 +91,25 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
         enterButton.layer.masksToBounds = true
     }
     
-    @objc private func keyboardWillShow(notification: NSNotification) {
-        guard let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else { return }
-        enterButtonFrameBottomConstraint.constant = keyboardSize.height - view.safeAreaInsets.bottom
-        UIView.animate(withDuration: 0.3) { self.view.layoutIfNeeded() }
+    @objc func keyboardWillShow(notification: NSNotification) {
+        guard let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue else {
+            return
+        }
+
+        let keyboardHeight = keyboardSize.height
+        enterButtonFrameBottomConstraint.constant = keyboardHeight - view.safeAreaInsets.bottom
+
+        UIView.animate(withDuration: 0.3) {
+            self.view.layoutIfNeeded()
+        }
     }
-    
-    @objc private func keyboardWillHide(notification: NSNotification) {
+
+    @objc func keyboardWillHide(notification: NSNotification) {
         enterButtonFrameBottomConstraint.constant = 0
-        UIView.animate(withDuration: 0.3) { self.view.layoutIfNeeded() }
+
+        UIView.animate(withDuration: 0.3) {
+            self.view.layoutIfNeeded()
+        }
     }
     
     @objc private func dismissKeyboard() {

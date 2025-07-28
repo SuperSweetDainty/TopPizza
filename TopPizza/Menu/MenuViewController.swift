@@ -449,10 +449,10 @@ extension MenuViewController: MenuViewProtocol {
         for (_, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
             let items = meals.map {
                 MenuItem(
-                    name: $0.strMeal,
+                    name: $0.strMeal ?? "Без названия",
                     price: "from 2.5$",
-                    imageName: $0.strMealThumb,
-                    description: $0.strInstructions ?? "Uncategorized"
+                    imageName: $0.strMealThumb ?? "",
+                    description: $0.strInstructions ?? "Описание отсутствует"
                 )
             }
 

@@ -1,7 +1,7 @@
 import Foundation
 
 protocol NetworkServiceProtocol {
-    func fetchMeals(completion: @escaping (Result<[Meal], Error>) -> Void)
+    func fetchMeals(onResult: @escaping (Result<[Meal], Error>) -> Void)
 }
 
 final class NetworkService: NetworkServiceProtocol {
@@ -12,7 +12,7 @@ final class NetworkService: NetworkServiceProtocol {
         self.apiService = apiService
     }
 
-    func fetchMeals(completion: @escaping (Result<[Meal], Error>) -> Void) {
+    func fetchMeals(onResult completion: @escaping (Result<[Meal], Error>) -> Void) {
         apiService.fetchMeals(completion: completion)
     }
 }

@@ -161,7 +161,7 @@
                     </view>
                     <connections>
                         <outlet property="enterButton" destination="IUN-hr-Yuy" id="fdU-SS-pZR"/>
-                        <outlet property="enterButtonFrameBottomConstraint" destination="DYu-vc-ky3" id="6wg-zj-iEL"/>
+                        <outlet property="enterButtonFrameBottomConstraint" destination="I9z-wB-Ad5" id="Iai-gX-b4Z"/>
                         <outlet property="loginTextField" destination="ftM-7o-cRC" id="osz-2h-vvA"/>
                         <outlet property="passwordTextField" destination="UCB-aN-QAt" id="OIm-OJ-NOY"/>
                     </connections>
