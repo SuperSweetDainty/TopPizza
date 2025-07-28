@@ -12,6 +12,7 @@ final class MenuViewController: UIViewController {
     private var presenter: MenuPresenter!
     private var meals: [Meal] = []
     private var categoriesScrollView: UIView?
+    private var sectionViews: [UIView] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -124,9 +125,9 @@ final class MenuViewController: UIViewController {
         stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let categories = ["Пицца", "Комбо", "Десерты", "Напитки"]
+        let categories = ["Пицца", "Говядина", "Курица", "Десерт"]
 
-        for title in categories {
+        for (index, title) in categories.enumerated() {
             let button = UIButton(type: .system)
             button.setTitle(title, for: .normal)
             button.setTitleColor(UIColor(named: "BannerRed") ?? .white, for: .normal)
@@ -144,6 +145,10 @@ final class MenuViewController: UIViewController {
             button.contentVerticalAlignment = .center
 
             stack.addArrangedSubview(button)
+            
+            button.addAction(UIAction { [weak self] _ in
+                self?.presenter.didTapCategory(at: index)
+            }, for: .touchUpInside)
         }
 
         scroll.addSubview(stack)
@@ -241,7 +246,6 @@ final class MenuViewController: UIViewController {
 
 extension MenuViewController: MenuViewProtocol {
     func reloadData() {
-        // очищаем старое
         for view in contentStackView.arrangedSubviews {
             if view != promoStackView && !(view is UIScrollView) {
                 contentStackView.removeArrangedSubview(view)
@@ -249,6 +253,8 @@ extension MenuViewController: MenuViewProtocol {
             }
         }
 
+        sectionViews.removeAll()
+        
         for section in 0..<presenter.numberOfSections {
             let stack = UIStackView()
             stack.axis = .vertical
@@ -266,10 +272,16 @@ extension MenuViewController: MenuViewProtocol {
             }
 
             contentStackView.addArrangedSubview(stack)
+            sectionViews.append(stack)
         }
     }
 
     func scrollToSection(index: Int) {
+        guard index >= 0, index < sectionViews.count else { return }
+
+        let sectionView = sectionViews[index]
+        let targetRect = scrollView.convert(sectionView.frame, from: contentStackView)
+        scrollView.scrollRectToVisible(targetRect, animated: true)
     }
 
     func showError(message: String) {
@@ -330,6 +342,7 @@ extension MenuViewController: MenuViewProtocol {
             }
 
             contentStackView.addArrangedSubview(stack)
+            sectionViews.append(stack)
         }
     }
 }
