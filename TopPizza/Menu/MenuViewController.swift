@@ -7,8 +7,8 @@ final class MenuViewController: UIViewController {
 
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
-    private var promoScrollView: UIView?
     private let promoStackView = UIStackView()
+    private var promoScrollView: UIView?
     private var presenter: MenuPresenter!
     private var meals: [Meal] = []
     private var categoriesScrollView: UIView?
@@ -287,8 +287,15 @@ extension MenuViewController: MenuViewProtocol {
         guard index >= 0, index < sectionViews.count else { return }
 
         let sectionView = sectionViews[index]
-        let targetRect = scrollView.convert(sectionView.frame, from: contentStackView)
-        scrollView.scrollRectToVisible(targetRect, animated: true)
+        let sectionFrame = sectionView.convert(sectionView.bounds, to: scrollView)
+
+        let categoryBarHeight = categoriesScrollView?.frame.height ?? 40
+        let extraPadding: CGFloat = -40
+
+        let targetOffsetY = sectionFrame.minY - categoryBarHeight - extraPadding
+        let adjustedOffset = CGPoint(x: 0, y: max(0, targetOffsetY))
+
+        scrollView.setContentOffset(adjustedOffset, animated: true)
     }
 
     func showError(message: String) {
@@ -305,6 +312,8 @@ extension MenuViewController: MenuViewProtocol {
             }
         }
 
+        sectionViews.removeAll()
+
         let mockPizzas = [
             MenuItem(name: "Ветчина и грибы ", price: "от 345 р", imageName: "MockPizza", description: "Ветчина,шампиньоны, увеличинная порция моцареллы, томатный соус"),
             MenuItem(name: "Баварские колбаски", price: "от 345 р", imageName: "MockPizza2", description: "Баварски колбаски,ветчина, пикантная пепперони, острая чоризо, моцарелла, томатный соус"),
@@ -314,9 +323,11 @@ extension MenuViewController: MenuViewProtocol {
 
         let mockStack = createItemsStack(from: mockPizzas)
         contentStackView.addArrangedSubview(mockStack)
+        sectionViews.append(mockStack)
 
         setupPizzaListView(with: meals)
     }
+
 
     private func setupPizzaListView(with meals: [Meal]) {
         let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Без категории" }
@@ -333,6 +344,7 @@ extension MenuViewController: MenuViewProtocol {
 
             let stack = createItemsStack(from: items)
             contentStackView.addArrangedSubview(stack)
+            sectionViews.append(stack)
         }
     }
 
