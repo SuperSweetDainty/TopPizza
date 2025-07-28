@@ -203,8 +203,8 @@
                     </view>
                     <tabBarItem key="tabBarItem" title="" image="MenuIcon" id="oSc-EW-DbQ"/>
                     <connections>
-                        <outlet property="arrowImageView" destination="wrq-VN-lcl" id="ZeH-aj-OCo"/>
-                        <outlet property="cityLabel" destination="XSf-lg-pnb" id="ehw-fV-8kp"/>
+                        <outlet property="arrowImageView" destination="wrq-VN-lcl" id="x22-CP-gNK"/>
+                        <outlet property="cityLabel" destination="XSf-lg-pnb" id="irZ-5S-3yy"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="ZOM-Qi-JlU" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>

@@ -1,6 +1,6 @@
 import UIKit
 
-final class MenuViewController: UIViewController {
+final class MenuViewController: UIViewController, UIScrollViewDelegate {
 
     @IBOutlet private weak var cityLabel: UILabel!
     @IBOutlet private weak var arrowImageView: UIImageView!
@@ -8,23 +8,76 @@ final class MenuViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
     private let promoStackView = UIStackView()
+    private let stickyContainerView = UIView()
+    private let stickyCategoriesContainer = UIView()
+    private var stickyCategoriesView: UIView?
+    private var categoriesOriginalView: UIView?
     private var promoScrollView: UIView?
     private var presenter: MenuPresenter!
     private var meals: [Meal] = []
     private var categoriesScrollView: UIView?
     private var sectionViews: [UIView] = []
+    private var stickyTopConstraint: NSLayoutConstraint?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         presenter = MenuPresenter(view: self)
         presenter.viewDidLoad()
         setupScrollView()
+        setupStickyCategoriesContainer()
+        stickyCategoriesContainer.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            stickyCategoriesContainer.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            stickyCategoriesContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            stickyCategoriesContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            stickyCategoriesContainer.heightAnchor.constraint(equalToConstant: 50) // высота категорий
+        ])
+
+        stickyCategoriesContainer.isHidden = true
         setupContent()
         cityLabel.isHidden = true
         showBanner(message: "Вход выполнен успешно", textColor: UIColor(named: "BannerGreen") ?? .systemGreen, iconName: "CheckCircle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
             self.cityLabel.isHidden = false
         }
+        view.bringSubviewToFront(scrollView)
+        view.sendSubviewToBack(stickyCategoriesContainer)
+    }
+    
+    private func setupStickyCategories() {
+        stickyCategoriesView = createCategories()
+        guard let stickyCategoriesView = stickyCategoriesView else { return }
+        
+        stickyCategoriesContainer.addSubview(stickyCategoriesView)
+        stickyCategoriesView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stickyCategoriesView.topAnchor.constraint(equalTo: stickyCategoriesContainer.topAnchor),
+            stickyCategoriesView.leadingAnchor.constraint(equalTo: stickyCategoriesContainer.leadingAnchor),
+            stickyCategoriesView.trailingAnchor.constraint(equalTo: stickyCategoriesContainer.trailingAnchor),
+            stickyCategoriesView.bottomAnchor.constraint(equalTo: stickyCategoriesContainer.bottomAnchor)
+        ])
+    }
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard let categoriesOriginalView = categoriesOriginalView else { return }
+
+        let frameInView = categoriesOriginalView.convert(categoriesOriginalView.bounds, to: view)
+        let shouldStick = frameInView.origin.y <= 104
+
+        stickyCategoriesContainer.isHidden = !shouldStick
+
+        if shouldStick {
+            view.bringSubviewToFront(stickyCategoriesContainer)
+        }
+    }
+
+    private func addShadowToStickyContainer() {
+        stickyCategoriesContainer.layer.shadowColor = UIColor.black.withAlphaComponent(0.24).cgColor
+        stickyCategoriesContainer.layer.shadowOpacity = 1
+        stickyCategoriesContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
+        stickyCategoriesContainer.layer.shadowRadius = 7
+        stickyCategoriesContainer.layer.masksToBounds = false
     }
     
     private func setupPromoBannersSection() {
@@ -104,14 +157,75 @@ final class MenuViewController: UIViewController {
             contentStackView.bottomAnchor.constraint(equalTo: scrollView.contentLayoutGuide.bottomAnchor),
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor)
         ])
+
+        stickyContainerView.translatesAutoresizingMaskIntoConstraints = false
+        stickyContainerView.backgroundColor = UIColor(named: "BackgroundColor")
+        view.addSubview(stickyContainerView)
+
+        stickyTopConstraint = stickyContainerView.topAnchor.constraint(equalTo: scrollView.topAnchor, constant: 0)
+        stickyTopConstraint?.isActive = true
+
+        NSLayoutConstraint.activate([
+            stickyContainerView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            stickyContainerView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            stickyContainerView.heightAnchor.constraint(equalToConstant: 40)
+        ])
+
+        applyStickyShadow()
+        scrollView.delegate = self
     }
 
     private func setupContent() {
         setupPromoBannersSection()
 
-        let categoriesView = createCategories()
-        categoriesScrollView = categoriesView
-        contentStackView.addArrangedSubview(categoriesView)
+        let originalCategories = createCategories()
+        categoriesScrollView = originalCategories
+        categoriesOriginalView = originalCategories
+        contentStackView.addArrangedSubview(originalCategories)
+    }
+
+    
+    private func applyStickyShadow() {
+        stickyContainerView.layer.shadowColor = UIColor(named: "CategoryShadow")?.cgColor
+            ?? UIColor.black.withAlphaComponent(0.24).cgColor
+        stickyContainerView.layer.shadowOpacity = 1
+        stickyContainerView.layer.shadowOffset = CGSize(width: 0, height: 6)
+        stickyContainerView.layer.shadowRadius = 14 / 2
+        stickyContainerView.layer.masksToBounds = false
+    }
+    
+    private func setupStickyCategoriesContainer() {
+        stickyCategoriesContainer.translatesAutoresizingMaskIntoConstraints = false
+        stickyCategoriesContainer.backgroundColor = UIColor(named: "BackgroundColor")
+        stickyCategoriesContainer.isHidden = true
+        view.addSubview(stickyCategoriesContainer)
+        view.sendSubviewToBack(stickyCategoriesContainer)
+
+        NSLayoutConstraint.activate([
+            stickyCategoriesContainer.topAnchor.constraint(equalTo: view.topAnchor, constant: 104),
+            stickyCategoriesContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            stickyCategoriesContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            stickyCategoriesContainer.heightAnchor.constraint(equalToConstant: 50)
+        ])
+        
+        let stickyCategories = createCategories()
+        stickyCategoriesView = stickyCategories
+
+        stickyCategoriesContainer.addSubview(stickyCategories)
+        stickyCategories.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            stickyCategories.topAnchor.constraint(equalTo: stickyCategoriesContainer.topAnchor),
+            stickyCategories.leadingAnchor.constraint(equalTo: stickyCategoriesContainer.leadingAnchor),
+            stickyCategories.trailingAnchor.constraint(equalTo: stickyCategoriesContainer.trailingAnchor),
+            stickyCategories.bottomAnchor.constraint(equalTo: stickyCategoriesContainer.bottomAnchor)
+        ])
+
+        stickyCategoriesContainer.layer.shadowColor = UIColor(named: "CategoryShadow")?.cgColor ?? UIColor.black.withAlphaComponent(0.24).cgColor
+        stickyCategoriesContainer.layer.shadowOpacity = 1
+        stickyCategoriesContainer.layer.shadowOffset = CGSize(width: 0, height: 6)
+        stickyCategoriesContainer.layer.shadowRadius = 7
+        stickyCategoriesContainer.layer.masksToBounds = false
     }
     
     private func createCategories() -> UIView {
@@ -365,14 +479,12 @@ extension MenuViewController: MenuViewProtocol {
                 imageURL: item.imageName
             )
 
-            // Оборачиваем itemView во вью с фоном и скруглениями
             let container = UIView()
             container.backgroundColor = .white
             container.layer.masksToBounds = true
             container.translatesAutoresizingMaskIntoConstraints = false
             container.addSubview(itemView)
 
-            // Скругления только у первой и последней карточки
             var corners: CACornerMask = []
             if isFirst { corners.formUnion([.layerMinXMinYCorner, .layerMaxXMinYCorner]) }
             if isLast  { corners.formUnion([.layerMinXMaxYCorner, .layerMaxXMaxYCorner]) }
@@ -391,10 +503,9 @@ extension MenuViewController: MenuViewProtocol {
 
             stack.addArrangedSubview(container)
 
-            // Добавляем 1pt разделитель после каждого, кроме последнего
             if !isLast {
                 let separator = UIView()
-                separator.backgroundColor = UIColor.systemGray5
+                separator.backgroundColor = UIColor(named: "BackgroundColor")
                 separator.translatesAutoresizingMaskIntoConstraints = false
                 NSLayoutConstraint.activate([
                     separator.heightAnchor.constraint(equalToConstant: 1)
