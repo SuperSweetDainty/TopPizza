@@ -176,7 +176,15 @@ final class MenuViewController: UIViewController {
     }
 
     private func createPizzaItem(title: String, description: String, price: String, imageURL: String?) -> UIView {
+        let cardView = UIView()
+        cardView.translatesAutoresizingMaskIntoConstraints = false
+        cardView.backgroundColor = .white
+        cardView.layer.cornerRadius = 20
+        cardView.layer.masksToBounds = true
+
         let container = UIView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.widthAnchor.constraint(equalToConstant: 132).isActive = true
@@ -232,49 +240,48 @@ final class MenuViewController: UIViewController {
         hStack.translatesAutoresizingMaskIntoConstraints = false
 
         container.addSubview(hStack)
-
         NSLayoutConstraint.activate([
-            hStack.topAnchor.constraint(equalTo: container.topAnchor),
+            hStack.topAnchor.constraint(equalTo: container.topAnchor, constant: 16),
             hStack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 16),
             hStack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -16),
-            hStack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+            hStack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -16)
         ])
 
-        return container
+        cardView.addSubview(container)
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: cardView.topAnchor),
+            container.leadingAnchor.constraint(equalTo: cardView.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: cardView.trailingAnchor),
+            container.bottomAnchor.constraint(equalTo: cardView.bottomAnchor)
+        ])
+
+        return cardView
     }
 }
 
 extension MenuViewController: MenuViewProtocol {
     func reloadData() {
         for view in contentStackView.arrangedSubviews {
-            if view != promoStackView && !(view is UIScrollView) {
+            if view != promoScrollView && view != categoriesScrollView {
                 contentStackView.removeArrangedSubview(view)
                 view.removeFromSuperview()
             }
         }
 
         sectionViews.removeAll()
-        
-        for section in 0..<presenter.numberOfSections {
-            let stack = UIStackView()
-            stack.axis = .vertical
-            stack.spacing = 24
 
+        for section in 0..<presenter.numberOfSections {
+            var items: [MenuItem] = []
             for row in 0..<presenter.numberOfItems(in: section) {
-                let item = presenter.item(at: IndexPath(row: row, section: section))
-                let itemView = createPizzaItem(
-                    title: item.name,
-                    description: item.description,
-                    price: item.price,
-                    imageURL: item.imageName
-                )
-                stack.addArrangedSubview(itemView)
+                items.append(presenter.item(at: IndexPath(row: row, section: section)))
             }
 
+            let stack = createItemsStack(from: items)
             contentStackView.addArrangedSubview(stack)
             sectionViews.append(stack)
         }
     }
+
 
     func scrollToSection(index: Int) {
         guard index >= 0, index < sectionViews.count else { return }
@@ -305,21 +312,9 @@ extension MenuViewController: MenuViewProtocol {
             MenuItem(name: "Четыре сыра", price: "от 345 р", imageName: "MockPizza4", description: "Соус Карбонара, Сыр Моцарелла, Сыр Пармезан, Сыр Роккфорти, Сыр Чеддер (тёртый)")
         ]
 
-        let pizzaStack = UIStackView()
-        pizzaStack.axis = .vertical
-        pizzaStack.spacing = 24
+        let mockStack = createItemsStack(from: mockPizzas)
+        contentStackView.addArrangedSubview(mockStack)
 
-        for item in mockPizzas {
-            let itemView = createPizzaItem(
-                title: item.name,
-                description: item.description,
-                price: item.price,
-                imageURL: item.imageName
-            )
-            pizzaStack.addArrangedSubview(itemView)
-        }
-
-        contentStackView.addArrangedSubview(pizzaStack)
         setupPizzaListView(with: meals)
     }
 
@@ -327,22 +322,75 @@ extension MenuViewController: MenuViewProtocol {
         let mealsByCategory = Dictionary(grouping: meals) { $0.strCategory ?? "Без категории" }
 
         for (_, meals) in mealsByCategory.sorted(by: { $0.key < $1.key }) {
-            let stack = UIStackView()
-            stack.axis = .vertical
-            stack.spacing = 24
-
-            for meal in meals {
-                let itemView = createPizzaItem(
-                    title: meal.strMeal,
-                    description: meal.strInstructions ?? "Без описания",
+            let items = meals.map {
+                MenuItem(
+                    name: $0.strMeal,
                     price: "от 400 р",
-                    imageURL: meal.strMealThumb
+                    imageName: $0.strMealThumb,
+                    description: $0.strInstructions ?? "Без описания"
                 )
-                stack.addArrangedSubview(itemView)
             }
 
+            let stack = createItemsStack(from: items)
             contentStackView.addArrangedSubview(stack)
-            sectionViews.append(stack)
         }
+    }
+
+    
+    private func createItemsStack(from items: [MenuItem]) -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 0
+
+        for (index, item) in items.enumerated() {
+            let isFirst = index == 0
+            let isLast = index == items.count - 1
+
+            let itemView = createPizzaItem(
+                title: item.name,
+                description: item.description,
+                price: item.price,
+                imageURL: item.imageName
+            )
+
+            // Оборачиваем itemView во вью с фоном и скруглениями
+            let container = UIView()
+            container.backgroundColor = .white
+            container.layer.masksToBounds = true
+            container.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(itemView)
+
+            // Скругления только у первой и последней карточки
+            var corners: CACornerMask = []
+            if isFirst { corners.formUnion([.layerMinXMinYCorner, .layerMaxXMinYCorner]) }
+            if isLast  { corners.formUnion([.layerMinXMaxYCorner, .layerMaxXMaxYCorner]) }
+
+            container.layer.cornerRadius = 20
+            container.layer.maskedCorners = corners
+
+            // Constraints для itemView внутри container
+            itemView.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                itemView.topAnchor.constraint(equalTo: container.topAnchor),
+                itemView.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+                itemView.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                itemView.trailingAnchor.constraint(equalTo: container.trailingAnchor)
+            ])
+
+            stack.addArrangedSubview(container)
+
+            // Добавляем 1pt разделитель после каждого, кроме последнего
+            if !isLast {
+                let separator = UIView()
+                separator.backgroundColor = UIColor.systemGray5
+                separator.translatesAutoresizingMaskIntoConstraints = false
+                NSLayoutConstraint.activate([
+                    separator.heightAnchor.constraint(equalToConstant: 1)
+                ])
+                stack.addArrangedSubview(separator)
+            }
+        }
+
+        return stack
     }
 }
