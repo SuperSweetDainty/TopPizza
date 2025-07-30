@@ -2,14 +2,14 @@ import UIKit
 
 class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtocol {
     
-    @IBOutlet weak var enterButtonFrameBottomConstraint: NSLayoutConstraint!
-    @IBOutlet weak var enterButton: UIButton!
-    @IBOutlet weak var loginTextField: UITextField!
-    @IBOutlet weak var passwordTextField: UITextField!
+    @IBOutlet weak var enterButtonFrameBottomConstraint: NSLayoutConstraint?
+    @IBOutlet weak var enterButton: UIButton?
+    @IBOutlet weak var loginTextField: UITextField?
+    @IBOutlet weak var passwordTextField: UITextField?
     
-    private var presenter: AuthPresenterProtocol!
+    private var presenter: AuthPresenterProtocol?
     private var isPasswordVisible = false
-    private var eyeButton: UIButton!
+    private var eyeButton: UIButton?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,8 +35,8 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
         setupPasswordVisibilityButton()
         setupButtonBorder()
         
-        enterButton.alpha = 0.4
-        passwordTextField.rightViewMode = .never
+        enterButton?.alpha = 0.4
+        passwordTextField?.rightViewMode = .never
         
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGesture)
@@ -70,25 +70,27 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
     }
     
     func setupPasswordVisibilityButton() {
-        eyeButton = UIButton(type: .custom)
-        eyeButton.setImage(UIImage(named: "EyeClose"), for: .normal)
-        eyeButton.addTarget(self, action: #selector(togglePasswordVisibility), for: .touchUpInside)
-
-        eyeButton.imageView?.contentMode = .scaleAspectFit
-        eyeButton.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
-
-        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: 18 + 15, height: 18))
-        eyeButton.center = CGPoint(x: containerView.bounds.width - 24, y: containerView.bounds.midY)
-        containerView.addSubview(eyeButton)
-
-        passwordTextField.rightView = containerView
+        let button = UIButton(type: .custom)
+        button.setImage(UIImage(named: "EyeClose"), for: .normal)
+        button.addTarget(self, action: #selector(togglePasswordVisibility), for: .touchUpInside)
+        button.imageView?.contentMode = .scaleAspectFit
+        button.frame = CGRect(x: 0, y: 0, width: 18, height: 18)
+        
+        let containerView = UIView(frame: CGRect(x: 0, y: 0, width: 33, height: 18))
+        button.center = CGPoint(x: containerView.bounds.width - 24, y: containerView.bounds.midY)
+        containerView.addSubview(button)
+        
+        if let passwordTextField = passwordTextField {
+            passwordTextField.rightView = containerView
+            passwordTextField.rightViewMode = .always
+        }
     }
 
     
     private func setupButtonBorder() {
-        enterButton.layer.borderWidth = 1
-        enterButton.layer.borderColor = UIColor(named: "ButtonBorderGrey")?.cgColor ?? UIColor.gray.cgColor
-        enterButton.layer.masksToBounds = true
+        enterButton?.layer.borderWidth = 1
+        enterButton?.layer.borderColor = UIColor(named: "ButtonBorderGrey")?.cgColor ?? UIColor.gray.cgColor
+        enterButton?.layer.masksToBounds = true
     }
     
     @objc func keyboardWillShow(notification: NSNotification) {
@@ -97,7 +99,7 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
         }
 
         let keyboardHeight = keyboardSize.height
-        enterButtonFrameBottomConstraint.constant = keyboardHeight - view.safeAreaInsets.bottom
+        enterButtonFrameBottomConstraint?.constant = keyboardHeight - view.safeAreaInsets.bottom
 
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
@@ -105,7 +107,7 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
     }
 
     @objc func keyboardWillHide(notification: NSNotification) {
-        enterButtonFrameBottomConstraint.constant = 0
+        enterButtonFrameBottomConstraint?.constant = 0
 
         UIView.animate(withDuration: 0.3) {
             self.view.layoutIfNeeded()
@@ -118,21 +120,21 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
     
     @objc private func togglePasswordVisibility() {
         isPasswordVisible.toggle()
-        passwordTextField.isSecureTextEntry = !isPasswordVisible
+        passwordTextField?.isSecureTextEntry = !isPasswordVisible
         
         let imageName = isPasswordVisible ? "EyeOpen" : "EyeClose"
-        eyeButton.setImage(UIImage(named: imageName), for: .normal)
+        eyeButton?.setImage(UIImage(named: imageName), for: .normal)
     }
     
     @IBAction func enterButtonTapped(_ sender: UIButton) {
         dismissKeyboard()
-        presenter.loginTapped(username: loginTextField.text, password: passwordTextField.text)
+        presenter?.loginTapped(username: loginTextField?.text, password: passwordTextField?.text)
     }
     
     func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.01) {
-            self.presenter.validateInputs(username: self.loginTextField.text, password: self.passwordTextField.text)
-            self.passwordTextField.rightViewMode = (self.passwordTextField.text ?? "").isEmpty ? .never : .always
+            self.presenter?.validateInputs(username: self.loginTextField?.text, password: self.passwordTextField?.text)
+            self.passwordTextField?.rightViewMode = (self.passwordTextField?.text ?? "").isEmpty ? .never : .always
         }
         return true
     }
@@ -153,7 +155,7 @@ class AuthViewController: UIViewController, UITextFieldDelegate, AuthViewProtoco
 
        func updateEnterButton(isEnabled: Bool) {
            UIView.animate(withDuration: 0.2) {
-               self.enterButton.alpha = isEnabled ? 1.0 : 0.4
+               self.enterButton?.alpha = isEnabled ? 1.0 : 0.4
            }
        }
    }

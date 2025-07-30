@@ -2,8 +2,8 @@ import UIKit
 
 final class MenuViewController: UIViewController, UIScrollViewDelegate {
 
-    @IBOutlet private weak var cityLabel: UILabel!
-    @IBOutlet private weak var arrowImageView: UIImageView!
+    @IBOutlet private weak var cityLabel: UILabel?
+    @IBOutlet private weak var arrowImageView: UIImageView?
 
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
@@ -13,7 +13,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
     private var stickyCategoriesView: UIView?
     private var categoriesOriginalView: UIView?
     private var promoScrollView: UIView?
-    private var presenter: MenuPresenter!
+    private var presenter: MenuPresenter?
     private var meals: [Meal] = []
     private var categoriesScrollView: UIView?
     private var sectionViews: [UIView] = []
@@ -22,7 +22,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
     override func viewDidLoad() {
         super.viewDidLoad()
         presenter = MenuPresenter(view: self)
-        presenter.viewDidLoad()
+        presenter?.viewDidLoad()
         setupScrollView()
         setupStickyCategoriesContainer()
 
@@ -35,10 +35,10 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
 
         stickyCategoriesContainer.isHidden = true
         setupContent()
-        cityLabel.isHidden = true
+        cityLabel?.isHidden = true
         showBanner(message: "Вход выполнен успешно", textColor: UIColor(named: "BannerGreen") ?? .systemGreen, iconName: "CheckCircle")
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            self.cityLabel.isHidden = false
+            self.cityLabel?.isHidden = false
         }
         view.bringSubviewToFront(scrollView)
         view.sendSubviewToBack(stickyCategoriesContainer)
@@ -137,7 +137,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
         view.addSubview(scrollView)
 
         NSLayoutConstraint.activate([
-            scrollView.topAnchor.constraint(equalTo: cityLabel.bottomAnchor, constant: 16),
+            scrollView.topAnchor.constraint(equalTo: cityLabel?.bottomAnchor ?? view.safeAreaLayoutGuide.topAnchor, constant: 16),
             scrollView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             scrollView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             scrollView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
@@ -259,7 +259,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
             stack.addArrangedSubview(button)
             
             button.addAction(UIAction { [weak self] _ in
-                self?.presenter.didTapCategory(at: index)
+                self?.presenter?.didTapCategory(at: index)
             }, for: .touchUpInside)
         }
 
@@ -382,10 +382,12 @@ extension MenuViewController: MenuViewProtocol {
 
         sectionViews.removeAll()
 
-        for section in 0..<presenter.numberOfSections {
+        for section in 0..<(presenter?.numberOfSections ?? 0) {
             var items: [MenuItem] = []
-            for row in 0..<presenter.numberOfItems(in: section) {
-                items.append(presenter.item(at: IndexPath(row: row, section: section)))
+            for row in 0..<(presenter?.numberOfItems(in: section) ?? 0) {
+                if let item = presenter?.item(at: IndexPath(row: row, section: section)) {
+                    items.append(item)
+                }
             }
 
             let stack = createItemsStack(from: items)
