@@ -237,7 +237,7 @@ final class MenuViewController: UIViewController, UIScrollViewDelegate {
         stack.alignment = .center
         stack.translatesAutoresizingMaskIntoConstraints = false
 
-        let categories = ["Pizza", "Beef", "Chicken", "Dessert"]
+        let categories = ["Pizza", "Beef", "Chicken", "Dessert", "Lamb", "Miscellaneous", "Pasta", "Pork", "Seafood", "Side", "Vegetarian"]
 
         for (index, title) in categories.enumerated() {
             let button = UIButton(type: .system)
@@ -457,7 +457,7 @@ extension MenuViewController: MenuViewProtocol {
                     name: name,
                     price: "from 2.5$",
                     imageName: image,
-                    description: meal.strInstructions ?? "Description is missing"
+                    description: meal.ingredients.joined(separator: ", ")
                 )
             }
 
